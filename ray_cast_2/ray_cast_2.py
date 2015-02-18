@@ -9,15 +9,15 @@ from functools import partial
 import pygame
 pygame.init()
 
-def create_world_map():
-    world_map = []
+def create_map():
+    map = []
 
-    world_map.append([1] * 64)
+    map.append([1] * 64)
     for i in range(62):
-        world_map.append([2] + [0] * 62 + [3])
-    world_map.append([1] * 64)
+        map.append([2] + [0] * 62 + [3])
+    map.append([1] * 64)
        
-    return world_map
+    return map
 
 def get_distance_to_plane(fov, screen_width):
     """Works out the distance from the player to the plane."""
@@ -26,7 +26,7 @@ def get_distance_to_plane(fov, screen_width):
     return half_screen_width / tan(fov_radians)
 
 def get_horiz_intersect(
-        world_map, player_coord, ray_angle, cell_size):
+        map, player_coord, ray_angle, cell_size):
     # Unpacking the co-ordinate tuple
     player_x, player_y = player_coord
 
@@ -52,7 +52,7 @@ def get_horiz_intersect(
     a_x_grid = get_grid_coord(a_x)
 
     # Checking if our first intersection is a wall.
-    if world_map[a_x_grid][a_y_grid] > 0:
+    if map[a_x_grid][a_y_grid] > 0:
         return (a_x_grid, a_y_grid)
 
     # Finding the size of the triangle
@@ -73,11 +73,11 @@ def get_horiz_intersect(
         x_grid = get_grid_coord(x)
         y_grid = get_grid_coord(y)
 
-        if world_map[x_grid][y_grid] > 0:
+        if map[x_grid][y_grid] > 0:
             return (x_grid, y_grid)
 
 def get_vert_intersect(
-        world_map, player_coord, ray_angle, cell_size):
+        map, player_coord, ray_angle, cell_size):
     # Unpacking the co-ordinate tuple
     player_x, player_y = player_coord
 
@@ -109,7 +109,7 @@ def get_vert_intersect(
         a_x_grid = get_grid_coord(x_new)
         a_y_grid = get_grid_coord(y_new)
         
-        if world_map[a_x_grid][a_y_grid] > 0:
+        if map[a_x_grid][a_y_grid] > 0:
             return (a_x_grid, a_y_grid)
     
         x_old = x_new
@@ -146,73 +146,54 @@ def handle_input(player_angle, player_coord):
                     player_angle -= 15
                 elif event.key == pygame.K_LEFT:
                     player_angle += 15
-            if player_angle <= 0:
-                    player_angle = 360 + player_angle
-            if player_angle >= 360:
-                    player_angle = 0 + player_angle - 360
-            if player_angle == 0:
-                player_angle += 0.000001
+    if player_angle <= 0:
+            player_angle = 360 + player_angle
+    if player_angle >= 360:
+            player_angle = 0 + player_angle - 360
+    if player_angle == 0:
+        player_angle += 0.000001
     return player_angle, player_coord
 
 def main():
-    # 10x10 world map with a column in the middle
-    world_map = create_world_map()
-    
-    # Setting a 320x200 screen
+    map = create_map()
     screen = pygame.display.set_mode((640, 480))
-
-    # Setting up our clock
     clock = pygame.time.Clock()
 
-    # Setting our fov
     fov = 60.0
 
-    # Setting our start location
-    # Middle of (1, 2)
-    # Each cell is 64 units
-    # So 1 cell + 1/2 a cell = 96
-    start = (96, 224)
+    # Setting our start location (Each cell is 64 units)
+    player_coord = (96, 224)
 
-    # Setting the camera angle
-    # 0 == east, 90 north etc
+    # 0 east, 90 north etc
     player_angle = 270
 
-    # Size of each side of each cell
     cell_size = 64
 
-    # Working out the distance from our camera to the wall
+    # Working out the distance from our camera to the visual plane
     plane_dist = get_distance_to_plane(fov, screen.get_width())
 
     # Getting the angle of a ray (column)
     column_angle = fov / float(screen.get_width())
 
-    # Will be updated in the loop
-    player_coord = start
+    get_horiz = partial(get_horiz_intersect, 
+                          map = map, cell_size = cell_size)
 
-    # To ease typing
-    check_horiz = partial(get_horiz_intersect,
-                          world_map = world_map,
-                          cell_size = cell_size)
-
-    check_vert = partial(get_vert_intersect,
-                         world_map = world_map,
-                         cell_size = cell_size)
+    get_vert = partial(get_vert_intersect,
+                         map = map, cell_size = cell_size)
 
     get_slice_h = partial(get_slice_height, cell_size = cell_size)      
                         
     get_line_start = lambda height, screen_h : (screen_h / 2) - (height / 2)
-    get_line_end = lambda height, screen_h : (screen_h / 2) + (height / 2)
-    
     get_line_start = partial(get_line_start, screen_h = screen.get_height())
+    
+    get_line_end = lambda height, screen_h : (screen_h / 2) + (height / 2)
     get_line_end = partial(get_line_end, screen_h = screen.get_height())
 
     colours = {1 : (0xFF, 0x00, 0x00),
                2 : (0x00, 0xFF, 0x00),
                3 : (0x00, 0x00, 0xFF)}
 
-    # The start of our game loop
-    while True:
-        # Recording a new loop
+    while 1:
         clock.tick(20)
 
         # Setting up our background
@@ -226,10 +207,10 @@ def main():
             ray_angle = (player_angle + (fov / 2)) - (column_angle * ray)
 
             try:
-                hit = check_horiz(player_coord = player_coord, 
+                hit = get_horiz(player_coord = player_coord, 
                                   ray_angle = ray_angle)
             except IndexError:
-                hit = check_vert(player_coord = player_coord, 
+                hit = get_vert(player_coord = player_coord, 
                                  ray_angle = ray_angle)
 
             dist = get_distance_to_wall(
@@ -241,7 +222,7 @@ def main():
             start_line = (ray, get_line_start(slice_height))
             end_line = (ray, get_line_end(slice_height))
             
-            colour = colours[world_map[hit[0]][hit[1]]]
+            colour = colours[map[hit[0]][hit[1]]]
 
             pygame.draw.line(
                 background, colour, end_line, start_line)
