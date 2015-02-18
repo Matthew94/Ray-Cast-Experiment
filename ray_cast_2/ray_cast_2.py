@@ -117,18 +117,18 @@ def get_vert_intersect(player_coord, ray_angle, cell_size, map):
         x_new = x_old + x_a
         y_new = y_old - y_a
 
-def get_distance_to_wall(player_coord, point_coord, player_angle, ray_angle):
+def get_distance_to_wall(player_coord, point_coord, player_angle, fov):
     player_x, player_y = player_coord
     point_x, point_y = point_coord
 
     distance = sqrt(((player_x - point_x) ** 2) + 
                     ((player_y - point_y) ** 2))
 
-    angle = player_angle - ray_angle
+    beta = player_angle - fov
 
     get_undistorted_distance = lambda dist, angle : dist * cos(radians(angle))
   
-    return get_undistorted_distance(distance, angle)
+    return get_undistorted_distance(distance, beta)
 
 def get_slice_height(cell_size, plane_dist, wall_dist):
     return (cell_size / wall_dist) * plane_dist
@@ -163,7 +163,7 @@ def main():
     screen = pygame.display.set_mode((640, 480))
     clock = pygame.time.Clock()
 
-    fov = 60.0
+    fov = 90.0
 
     # Setting our start location (Each cell is 64 units)
     player_coord = (96, 224)
@@ -179,11 +179,11 @@ def main():
     # Getting the angle of a ray (column)
     column_angle = fov / screen.get_width()
 
-    get_horiz = partial(get_horiz_intersect, 
-                          map = map, cell_size = cell_size)
+    get_horiz = partial(
+        get_horiz_intersect, map = map, cell_size = cell_size)
 
-    get_vert = partial(get_vert_intersect,
-                         map = map, cell_size = cell_size)
+    get_vert = partial(
+        get_vert_intersect, map = map, cell_size = cell_size)
 
     get_slice_h = partial(get_slice_height, cell_size = cell_size)      
                         
@@ -213,7 +213,7 @@ def main():
                 hit = get_vert(player_coord, ray_angle)
 
             dist = get_distance_to_wall(
-                player_coord, hit, player_angle, ray_angle)
+                player_coord, hit, player_angle, fov)
 
             slice_height = get_slice_h(plane_dist = plane_dist, 
                                        wall_dist = dist)
