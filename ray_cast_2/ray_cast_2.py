@@ -177,7 +177,7 @@ def main():
     plane_dist = get_distance_to_plane(fov, screen.get_width())
 
     # Getting the angle of a ray (column)
-    column_angle = fov / float(screen.get_width())
+    column_angle = fov / screen.get_width()
 
     get_horiz = partial(get_horiz_intersect, 
                           map = map, cell_size = cell_size)
@@ -221,7 +221,9 @@ def main():
             start_line = (ray, get_line_start(slice_height))
             end_line = (ray, get_line_end(slice_height))
             
-            colour = colours[map[hit[0]][hit[1]]]
+            hit_x, hit_y = hit
+            wall_index = map[hit_y][hit_x]
+            colour = colours[wall_index]
 
             pygame.draw.line(
                 background, colour, end_line, start_line)
