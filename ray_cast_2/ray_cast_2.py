@@ -6,6 +6,7 @@ Taken from: http://www.permadi.com/tutorial/raycast/
 from __future__ import print_function
 from math import cos, sin, tan, fabs, radians, trunc, sqrt
 from functools import partial
+
 import pygame
 pygame.init()
 
@@ -14,7 +15,7 @@ def create_map():
 
     map.append([1] * 64)
     for i in range(62):
-        map.append([2] + [0] * 62 + [3])
+        map.append([2] + ([0] * 62) + [3])
     map.append([1] * 64)
        
     return map
@@ -130,19 +131,16 @@ def get_distance_to_wall(player_coord, point_coord, player_angle, fov):
   
     return get_undistorted_distance(distance, beta)
 
-def get_slice_height(cell_size, plane_dist, wall_dist):
-    return (cell_size / wall_dist) * plane_dist
-
 def handle_input(player_angle, player_coord, cell_size, world_length):
     for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    new_x = player_coord[0] - 20
+                    new_x = player_coord[0] - 45
                     if new_x < 0:
                         new_x = cell_size
                     player_coord = (new_x, player_coord[1])
                 elif event.key == pygame.K_DOWN:
-                    new_x = player_coord[0] + 20
+                    new_x = player_coord[0] + 45
                     if new_x < 0:
                         new_x = world_length - cell_size
                     player_coord = (new_x, player_coord[1])
@@ -150,13 +148,18 @@ def handle_input(player_angle, player_coord, cell_size, world_length):
                     player_angle -= 15
                 elif event.key == pygame.K_LEFT:
                     player_angle += 15
+
+    player_angle = fix_angle(player_angle)
+    return player_angle, player_coord
+
+def fix_angle(player_angle):
     if player_angle <= 0:
             player_angle = 360 + player_angle
     if player_angle >= 360:
             player_angle = 0 + player_angle - 360
     if player_angle == 0:
         player_angle += 1
-    return player_angle, player_coord
+    return player_angle
 
 def main():
     map = create_map()
@@ -166,7 +169,7 @@ def main():
     fov = 90.0
 
     # Setting our start location (Each cell is 64 units)
-    player_coord = (96, 224)
+    player_coord = (3 * 64, 10 * 64)
 
     # 0 east, 90 north etc
     player_angle = 270
@@ -185,7 +188,9 @@ def main():
     get_vert = partial(
         get_vert_intersect, map = map, cell_size = cell_size)
 
-    get_slice_h = partial(get_slice_height, cell_size = cell_size)      
+    get_slice_height = lambda plane_dist, wall_dist, cell_size : \
+        (cell_size / wall_dist) * plane_dist
+    get_slice_height = partial(get_slice_height, cell_size = cell_size)      
                         
     get_line_start = lambda height, screen_h : (screen_h / 2) - (height / 2)
     get_line_start = partial(get_line_start, screen_h = screen.get_height())
@@ -215,8 +220,7 @@ def main():
             dist = get_distance_to_wall(
                 player_coord, hit, player_angle, fov)
 
-            slice_height = get_slice_h(plane_dist = plane_dist, 
-                                       wall_dist = dist)
+            slice_height = get_slice_height(plane_dist, dist)
 
             start_line = (ray, get_line_start(slice_height))
             end_line = (ray, get_line_end(slice_height))
