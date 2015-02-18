@@ -25,10 +25,10 @@ def get_distance_to_plane(fov, screen_width):
     half_screen_width = screen_width / 2
     return half_screen_width / tan(fov_radians)
 
-def check_horizontal_intersections(
-        world_map, player_coordinate, player_angle, cell_size):
+def get_horiz_intersect(
+        world_map, player_coord, ray_angle, cell_size):
     # Unpacking the co-ordinate tuple
-    player_x, player_y = player_coordinate
+    player_x, player_y = player_coord
 
     # Function for getting the grid coordinate
     # of a unit coordinate
@@ -37,14 +37,14 @@ def check_horizontal_intersections(
 
     # Find the unit y coordinate
     # of the first grid hit
-    if player_angle <= 180:
+    if ray_angle <= 180:
         a_y = trunc(player_y / cell_size) * cell_size - 1
     else:
         a_y = trunc(player_y / cell_size) * cell_size + cell_size
     
     # Find the unit x coordinate
     # of the first grid hit
-    a_x = player_x + (player_y - a_y) / tan(radians(player_angle))
+    a_x = player_x + (player_y - a_y) / tan(radians(ray_angle))
 
     # Getting grid coordinates
     # of a_y and a_x
@@ -57,8 +57,8 @@ def check_horizontal_intersections(
 
     # Finding the size of the triangle
     # that we keep adding for each stage
-    y_a = -cell_size if player_angle <= 180 else cell_size
-    x_a = 64 / tan(radians(player_angle))
+    y_a = -cell_size if ray_angle <= 180 else cell_size
+    x_a = 64 / tan(radians(ray_angle))
 
     # Setting up the variables for the loop
     x = a_x
@@ -76,10 +76,10 @@ def check_horizontal_intersections(
         if world_map[x_grid][y_grid] > 0:
             return (x_grid, y_grid)
 
-def check_vertical_intersections(
-        world_map, player_coordinate, player_angle, cell_size):
+def get_vert_intersect(
+        world_map, player_coord, ray_angle, cell_size):
     # Unpacking the co-ordinate tuple
-    player_x, player_y = player_coordinate
+    player_x, player_y = player_coord
 
     # Function for getting the grid coordinate
     # of a unit coordinate
@@ -87,20 +87,20 @@ def check_vertical_intersections(
     get_grid_coord = partial(get_grid_coord, cell_size = cell_size)
 
     # Find Bx
-    if player_angle < 90 or player_angle > 270:
+    if ray_angle < 90 or ray_angle > 270:
         b_x = trunc(player_x / cell_size) * cell_size + cell_size
     else:
         b_x = trunc(player_x / cell_size) * cell_size - 1
 
-    b_y = player_y + (player_x - b_x) * tan(radians(player_angle))
+    b_y = player_y + (player_x - b_x) * tan(radians(ray_angle))
 
     # Find Xa and Ya
-    if player_angle < 90 or player_angle > 270:
+    if ray_angle < 90 or ray_angle > 270:
         x_a = cell_size
     else:
         x_a = -cell_size
 
-    y_a = cell_size * tan(radians(player_angle))
+    y_a = cell_size * tan(radians(ray_angle))
 
     x_new = b_x
     y_new = b_y
@@ -171,11 +171,11 @@ def main():
     player_coord = start
 
     # To ease typing
-    check_horiz = partial(check_horizontal_intersections,
+    check_horiz = partial(get_horiz_intersect,
                           world_map = world_map,
                           cell_size = cell_size)
 
-    check_vert = partial(check_vertical_intersections,
+    check_vert = partial(get_vert_intersect,
                          world_map = world_map,
                          cell_size = cell_size)
 
@@ -207,11 +207,11 @@ def main():
             ray_angle = (player_angle + (fov / 2)) - (column_angle * ray)
 
             try:
-                hit = check_horiz(player_coordinate = player_coord, 
-                                  player_angle = ray_angle)
+                hit = check_horiz(player_coord = player_coord, 
+                                  ray_angle = ray_angle)
             except IndexError:
-                hit = check_vert(player_coordinate = player_coord, 
-                                 player_angle = ray_angle)
+                hit = check_vert(player_coord = player_coord, 
+                                 ray_angle = ray_angle)
 
             dist = get_distance_to_wall(
                 player_coord, hit, player_angle, ray_angle)
