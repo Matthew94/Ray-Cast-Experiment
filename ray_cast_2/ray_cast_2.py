@@ -13,10 +13,24 @@ pygame.init()
 def create_map():
     map = []
 
-    map.append([1] * 64)
-    for i in range(62):
-        map.append([2] + ([0] * 62) + [3])
-    map.append([1] * 64)
+    #map.append([1] * 64)
+    #for i in range(62):
+    #    map.append([2] + ([0] * 62) + [3])
+    #map.append([1] * 64)
+
+    map = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    [1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
+    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ]
+
        
     return map
 
@@ -73,7 +87,8 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
         x_grid = get_grid_coord(x)
         y_grid = get_grid_coord(y)
 
-        if map[x_grid][y_grid] > 0:
+        check = map[x_grid][y_grid]
+        if check > 0:
             return (x_grid, y_grid)
 
 def get_vert_intersect(p_coord, ray_angle, cell_size, map):
@@ -118,13 +133,13 @@ def get_vert_intersect(p_coord, ray_angle, cell_size, map):
         x_new = x_old + x_a
         y_new = y_old - y_a
 
-def get_distance_to_wall(p_coord, wall_coord, p_angle, fov):
+def get_distance_to_wall(p_coord, wall_coord, ray, fov, column_angle):
     p_x, p_y = p_coord
     wall_x, wall_y = wall_coord
 
     distance = sqrt(((p_x - wall_x) ** 2) + ((p_y - wall_y) ** 2))
 
-    beta = p_angle - fov
+    beta = (-0.5 * fov) + (ray * column_angle)
 
     get_undistorted_distance = lambda dist, angle : dist * cos(radians(angle))
   
@@ -134,19 +149,33 @@ def handle_input(p_angle, p_coord, cell_size, world_length):
     for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    new_x = p_coord[0] - 45
-                    if new_x < 0:
-                        new_x = cell_size
-                    p_coord = (new_x, p_coord[1])
+                    pass
                 elif event.key == pygame.K_DOWN:
-                    new_x = p_coord[0] + 45
-                    if new_x < 0:
-                        new_x = world_length - cell_size
-                    p_coord = (new_x, p_coord[1])
+                    pass
                 elif event.key == pygame.K_RIGHT:
                     p_angle -= 15
                 elif event.key == pygame.K_LEFT:
                     p_angle += 15
+                elif event.key == pygame.K_w:
+                    new_y= p_coord[1] - cell_size
+                    if new_y <= 0:
+                        new_y = cell_size
+                    p_coord = (p_coord[0], new_y)
+                elif event.key == pygame.K_s:
+                    new_y= p_coord[1] + cell_size
+                    if new_y >= world_length:
+                        new_y = world_length - cell_size
+                    p_coord = (p_coord[0], new_y)
+                elif event.key == pygame.K_a:
+                    new_x = p_coord[0] - cell_size
+                    if new_x <= 0:
+                        new_x = cell_size
+                    p_coord = (new_x, p_coord[1])
+                elif event.key == pygame.K_d:
+                    new_x = p_coord[0] + cell_size
+                    if new_x >= world_length:
+                        new_x = world_length - cell_size
+                    p_coord = (new_x, p_coord[1])
 
     p_angle = fix_angle(p_angle)
     return p_angle, p_coord
@@ -168,10 +197,10 @@ def main():
     fov = 90.0
 
     # Setting our start location (Each cell is 64 units)
-    p_coord = (3 * 64, 10 * 64)
+    p_coord = (3 * 64, 2 * 64)
 
     # 0 east, 90 north etc
-    p_angle = 270
+    p_angle = 180
 
     cell_size = 64
 
@@ -181,11 +210,8 @@ def main():
     # Getting the angle of a ray (column)
     column_angle = fov / screen.get_width()
 
-    get_horiz = partial(
-        get_horiz_intersect, map = map, cell_size = cell_size)
-
-    get_vert = partial(
-        get_vert_intersect, map = map, cell_size = cell_size)
+    get_horiz = partial(get_horiz_intersect, map = map, cell_size = cell_size)
+    get_vert = partial(get_vert_intersect, map = map, cell_size = cell_size)
 
     get_slice_height = lambda plane_dist, wall_dist, cell_size : \
         (cell_size / wall_dist) * plane_dist
@@ -208,15 +234,42 @@ def main():
         background.fill((0x00, 0x00, 0x00))
 
         for ray in range(screen.get_width()):
-            hit = None
+            x_hit = None
+            y_hit = None
+
+            x_dist = None
+            y_dist = None
             ray_angle = (p_angle + (fov / 2)) - (column_angle * ray)
 
             try:
-                hit = get_horiz(p_coord, ray_angle)
+                x_hit = get_horiz(p_coord, ray_angle)
             except IndexError:
-                hit = get_vert(p_coord, ray_angle)
+                pass
+            else:
+                x_dist = get_distance_to_wall(
+                    p_coord, x_hit, ray, fov, column_angle)
 
-            dist = get_distance_to_wall(p_coord, hit, p_angle, fov)
+            try:
+                y_hit = get_vert(p_coord, ray_angle)
+            except IndexError:
+                pass
+            else:
+                y_dist = get_distance_to_wall(
+                    p_coord, y_hit, ray, fov, column_angle)
+
+            if y_dist and not x_dist:
+                dist = y_dist
+                hit = y_hit
+            elif x_dist and not y_dist:
+                dist = x_dist
+                hit = x_hit
+            else:
+                if x_dist <= y_dist:
+                    dist = x_dist
+                    hit = x_hit
+                else:
+                    dist = y_dist
+                    hit = y_hit
 
             slice_height = get_slice_height(plane_dist, dist)
 
@@ -224,7 +277,7 @@ def main():
             end_line = (ray, get_line_end(slice_height))
             
             hit_x, hit_y = hit
-            wall_index = map[hit_y][hit_x]
+            wall_index = map[hit_x][hit_y]
             colour = colours[wall_index]
 
             pygame.draw.line(background, colour, end_line, start_line)
