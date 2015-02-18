@@ -25,8 +25,7 @@ def get_distance_to_plane(fov, screen_width):
     half_screen_width = screen_width / 2
     return half_screen_width / tan(fov_radians)
 
-def get_horiz_intersect(
-        map, player_coord, ray_angle, cell_size):
+def get_horiz_intersect(player_coord, ray_angle, cell_size, map):
     # Unpacking the co-ordinate tuple
     player_x, player_y = player_coord
 
@@ -76,8 +75,7 @@ def get_horiz_intersect(
         if map[x_grid][y_grid] > 0:
             return (x_grid, y_grid)
 
-def get_vert_intersect(
-        map, player_coord, ray_angle, cell_size):
+def get_vert_intersect(player_coord, ray_angle, cell_size, map):
     # Unpacking the co-ordinate tuple
     player_x, player_y = player_coord
 
@@ -135,13 +133,19 @@ def get_distance_to_wall(player_coord, point_coord, player_angle, ray_angle):
 def get_slice_height(cell_size, plane_dist, wall_dist):
     return (cell_size / wall_dist) * plane_dist
 
-def handle_input(player_angle, player_coord):
+def handle_input(player_angle, player_coord, cell_size, world_length):
     for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    player_coord = (player_coord[0] - 20, player_coord[1])
+                    new_x = player_coord[0] - 20
+                    if new_x < 0:
+                        new_x = cell_size
+                    player_coord = (new_x, player_coord[1])
                 elif event.key == pygame.K_DOWN:
-                   player_coord = (player_coord[0] + 20, player_coord[1])
+                    new_x = player_coord[0] + 20
+                    if new_x < 0:
+                        new_x = world_length - cell_size
+                    player_coord = (new_x, player_coord[1])
                 elif event.key == pygame.K_RIGHT:
                     player_angle -= 15
                 elif event.key == pygame.K_LEFT:
@@ -151,7 +155,7 @@ def handle_input(player_angle, player_coord):
     if player_angle >= 360:
             player_angle = 0 + player_angle - 360
     if player_angle == 0:
-        player_angle += 0.000001
+        player_angle += 1
     return player_angle, player_coord
 
 def main():
@@ -196,22 +200,17 @@ def main():
     while 1:
         clock.tick(20)
 
-        # Setting up our background
         background = pygame.Surface(screen.get_size())
         background.fill((0x00, 0x00, 0x00))
 
-        # Going over each column of pixels
-        # To work out how to draw each line
-        # After this, the screen is rendered
         for ray in range(screen.get_width()):
+            hit = None
             ray_angle = (player_angle + (fov / 2)) - (column_angle * ray)
 
             try:
-                hit = get_horiz(player_coord = player_coord, 
-                                  ray_angle = ray_angle)
+                hit = get_horiz(player_coord, ray_angle)
             except IndexError:
-                hit = get_vert(player_coord = player_coord, 
-                                 ray_angle = ray_angle)
+                hit = get_vert(player_coord, ray_angle)
 
             dist = get_distance_to_wall(
                 player_coord, hit, player_angle, ray_angle)
@@ -231,8 +230,12 @@ def main():
         screen.blit(background, (0, 0))
         pygame.display.flip()
 
-        player_angle, player_coord = handle_input(player_angle, player_coord)
-        
+        player_angle, player_coord = handle_input(
+            player_angle, player_coord, cell_size, len(map))
+
+        print("Angle : {0} Co-ordinate: {1}".format(
+            player_angle, (player_coord[0] / cell_size,
+                           player_coord[1] / cell_size)))
 
 if __name__ == "__main__":
     main()
