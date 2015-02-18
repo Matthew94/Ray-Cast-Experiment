@@ -13,23 +13,23 @@ pygame.init()
 def create_map():
     map = []
 
-    #map.append([1] * 64)
-    #for i in range(62):
-    #    map.append([2] + ([0] * 62) + [3])
-    #map.append([1] * 64)
+    map.append([1] * 64)
+    for i in range(62):
+        map.append([2] + ([0] * 62) + [3])
+    map.append([1] * 64)
 
-    map = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
-    [1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
-    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ]
+    #map = [
+    #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    #[1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
+    #[1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    #]
 
        
     return map
@@ -163,7 +163,7 @@ def handle_input(p_angle, p_coord, cell_size, world_length):
                     p_coord = (p_coord[0], new_y)
                 elif event.key == pygame.K_s:
                     new_y= p_coord[1] + cell_size
-                    if new_y >= world_length:
+                    if new_y >= world_length * cell_size:
                         new_y = world_length - cell_size
                     p_coord = (p_coord[0], new_y)
                 elif event.key == pygame.K_a:
@@ -173,7 +173,7 @@ def handle_input(p_angle, p_coord, cell_size, world_length):
                     p_coord = (new_x, p_coord[1])
                 elif event.key == pygame.K_d:
                     new_x = p_coord[0] + cell_size
-                    if new_x >= world_length:
+                    if new_x >= world_length * cell_size:
                         new_x = world_length - cell_size
                     p_coord = (new_x, p_coord[1])
 
@@ -191,7 +191,7 @@ def fix_angle(p_angle):
 
 def main():
     map = create_map()
-    screen = pygame.display.set_mode((640, 480))
+    screen = pygame.display.set_mode((128, 96))
     clock = pygame.time.Clock()
 
     fov = 90.0
