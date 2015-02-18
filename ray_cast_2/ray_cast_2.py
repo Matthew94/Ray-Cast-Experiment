@@ -135,6 +135,25 @@ def get_distance_to_wall(player_coord, point_coord, player_angle, ray_angle):
 def get_slice_height(cell_size, plane_dist, wall_dist):
     return (cell_size / wall_dist) * plane_dist
 
+def handle_input(player_angle, player_coord):
+    for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    player_coord = (player_coord[0] - 20, player_coord[1])
+                elif event.key == pygame.K_DOWN:
+                   player_coord = (player_coord[0] + 20, player_coord[1])
+                elif event.key == pygame.K_RIGHT:
+                    player_angle -= 15
+                elif event.key == pygame.K_LEFT:
+                    player_angle += 15
+            if player_angle <= 0:
+                    player_angle = 360 + player_angle
+            if player_angle >= 360:
+                    player_angle = 0 + player_angle - 360
+            if player_angle == 0:
+                player_angle += 0.000001
+    return player_angle, player_coord
+
 def main():
     # 10x10 world map with a column in the middle
     world_map = create_world_map()
@@ -226,25 +245,13 @@ def main():
 
             pygame.draw.line(
                 background, colour, end_line, start_line)
+
+        # Rendering the screen
         screen.blit(background, (0, 0))
         pygame.display.flip()
 
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    player_coord = (player_coord[0] - 20, player_coord[1])
-                elif event.key == pygame.K_DOWN:
-                   player_coord = (player_coord[0] + 20, player_coord[1])
-                elif event.key == pygame.K_RIGHT:
-                    player_angle -= 15
-                elif event.key == pygame.K_LEFT:
-                    player_angle += 15
-            if player_angle <= 0:
-                    player_angle = 360 + player_angle
-            if player_angle >= 360:
-                    player_angle = 0 + player_angle - 360
-            if player_angle == 0:
-                player_angle += 0.000001
+        player_angle, player_coord = handle_input(player_angle, player_coord)
+        
 
 if __name__ == "__main__":
     main()
