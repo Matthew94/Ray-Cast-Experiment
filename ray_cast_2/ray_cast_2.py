@@ -13,23 +13,23 @@ pygame.init()
 def create_map():
     map = []
 
-    map.append([1] * 64)
-    for i in range(62):
-        map.append([2] + ([0] * 62) + [3])
-    map.append([1] * 64)
+    #map.append([1] * 64)
+    #for i in range(62):
+    #    map.append([2] + ([0] * 62) + [3])
+    #map.append([1] * 64)
 
-    #map = [
-    #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    #[1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
-    #[1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
-    #[1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
-    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    #]
+    map = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    [1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
+    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ]
 
        
     return map
@@ -49,19 +49,16 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
     get_grid_coord = lambda coord, cell_size : trunc(coord / cell_size) 
     get_grid_coord = partial(get_grid_coord, cell_size = cell_size)
 
-    # Find the unit y coordinate
-    # of the first grid hit
+    # Find the unit y coordinate of the first grid hit
     if ray_angle <= 180:
         a_y = trunc(p_y / cell_size) * cell_size - 1
     else:
         a_y = trunc(p_y / cell_size) * cell_size + cell_size
     
-    # Find the unit x coordinate
-    # of the first grid hit
+    # Find the unit x coordinate of the first grid hit
     a_x = p_x + (p_y - a_y) / tan(radians(ray_angle))
 
-    # Getting grid coordinates
-    # of a_y and a_x
+    # Getting grid coordinates of a_y and a_x
     a_y_grid = get_grid_coord(a_y)
     a_x_grid = get_grid_coord(a_x)
 
@@ -69,14 +66,12 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
     if map[a_x_grid][a_y_grid] > 0:
         return (a_x_grid, a_y_grid)
 
-    # Finding the size of the triangle
-    # that we keep adding for each stage
+    # Finding the size of the triangle that we keep adding for each stage
     y_a = -cell_size if ray_angle <= 180 else cell_size
     x_a = 64 / tan(radians(ray_angle))
 
     # Setting up the variables for the loop
-    x = a_x
-    y = a_y
+    x, y = a_x, a_y
 
     # Keep adding on the triangle
     # until we find a hit
@@ -189,6 +184,22 @@ def fix_angle(p_angle):
         p_angle += 1
     return p_angle
 
+def modify_functions(map, cell_size, screen):
+    get_horiz = partial(get_horiz_intersect, map = map, cell_size = cell_size)
+    get_vert = partial(get_vert_intersect, map = map, cell_size = cell_size)
+
+    get_slice_height = lambda plane_dist, wall_dist, cell_size : \
+        (cell_size / wall_dist) * plane_dist
+    get_slice_height = partial(get_slice_height, cell_size = cell_size)      
+                        
+    get_line_start = lambda height, screen_h : (screen_h / 2) - (height / 2)
+    get_line_start = partial(get_line_start, screen_h = screen.get_height())
+    
+    get_line_end = lambda height, screen_h : (screen_h / 2) + (height / 2)
+    get_line_end = partial(get_line_end, screen_h = screen.get_height())
+
+    return get_horiz, get_vert, get_slice_height, get_line_start, get_line_end
+
 def main():
     map = create_map()
     screen = pygame.display.set_mode((128, 96))
@@ -210,18 +221,8 @@ def main():
     # Getting the angle of a ray (column)
     column_angle = fov / screen.get_width()
 
-    get_horiz = partial(get_horiz_intersect, map = map, cell_size = cell_size)
-    get_vert = partial(get_vert_intersect, map = map, cell_size = cell_size)
-
-    get_slice_height = lambda plane_dist, wall_dist, cell_size : \
-        (cell_size / wall_dist) * plane_dist
-    get_slice_height = partial(get_slice_height, cell_size = cell_size)      
-                        
-    get_line_start = lambda height, screen_h : (screen_h / 2) - (height / 2)
-    get_line_start = partial(get_line_start, screen_h = screen.get_height())
-    
-    get_line_end = lambda height, screen_h : (screen_h / 2) + (height / 2)
-    get_line_end = partial(get_line_end, screen_h = screen.get_height())
+    get_horiz, get_vert, get_slice_height, get_line_start, get_line_end = (
+        modify_functions(map, cell_size, screen))
 
     colours = {1 : (0xFF, 0x00, 0x00),
                2 : (0x00, 0xFF, 0x00),
