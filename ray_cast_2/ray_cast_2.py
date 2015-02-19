@@ -13,23 +13,23 @@ pygame.init()
 def create_map():
     map = []
 
-    #map.append([1] * 64)
-    #for i in range(62):
-    #    map.append([2] + ([0] * 62) + [3])
-    #map.append([1] * 64)
+    map.append([1] * 64)
+    for i in range(62):
+        map.append([2] + ([0] * 62) + [3])
+    map.append([1] * 64)
 
-    map = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
-    [1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
-    [1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ]
+    #map = [
+    #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    #[1, 0, 0, 2, 0, 2, 0, 0, 0, 1],
+    #[1, 0, 0, 2, 2, 2, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    #]
 
        
     return map
@@ -63,11 +63,14 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
     a_x_grid = get_grid_coord(a_x)
 
     # Checking if our first intersection is a wall.
-    if map[a_x_grid][a_y_grid] > 0:
-        return (a_x_grid, a_y_grid)
+    if a_x_grid >= 0 and a_y_grid >= 0:
+        if map[a_x_grid][a_y_grid] > 0:
+            return (a_x_grid, a_y_grid)
+    else:
+        return None
 
     # Finding the size of the triangle that we keep adding for each stage
-    y_a = -cell_size if ray_angle <= 180 else cell_size
+    y_a = -cell_size if ray_angle <= 180 or ray_angle == 360 else cell_size
     x_a = 64 / tan(radians(ray_angle))
 
     # Setting up the variables for the loop
@@ -82,10 +85,11 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
         x_grid = get_grid_coord(x)
         y_grid = get_grid_coord(y)
 
-        check = map[x_grid][y_grid]
-        if check > 0:
-            return (x_grid, y_grid)
-
+        if x_grid >= 0 and y_grid >= 0:
+            if map[x_grid][y_grid] > 0:
+                return (x_grid, y_grid)
+        else:
+            return None
 def get_vert_intersect(p_coord, ray_angle, cell_size, map):
     # Unpacking the co-ordinate tuple
     p_x, p_y = p_coord
@@ -118,8 +122,11 @@ def get_vert_intersect(p_coord, ray_angle, cell_size, map):
         a_x_grid = get_grid_coord(x_new)
         a_y_grid = get_grid_coord(y_new)
         
-        if map[a_x_grid][a_y_grid] > 0:
-            return (a_x_grid, a_y_grid)
+        if a_x_grid >= 0 and a_y_grid >= 0:
+            if map[a_x_grid][a_y_grid] > 0:
+                return (a_x_grid, a_y_grid)
+        else:
+            return None
     
         x_old = x_new
         y_old = y_new
@@ -181,7 +188,7 @@ def fix_angle(p_angle):
     if p_angle >= 360:
             p_angle = 0 + p_angle - 360
     if p_angle == 0:
-        p_angle += 1
+        p_angle = 360.0
     return p_angle
 
 def modify_functions(map, cell_size, screen):
@@ -202,7 +209,7 @@ def modify_functions(map, cell_size, screen):
 
 def main():
     map = create_map()
-    screen = pygame.display.set_mode((128, 96))
+    screen = pygame.display.set_mode((320, 200))
     clock = pygame.time.Clock()
 
     fov = 90.0
@@ -211,7 +218,7 @@ def main():
     p_coord = (3 * 64, 2 * 64)
 
     # 0 east, 90 north etc
-    p_angle = 180
+    p_angle = 300
 
     cell_size = 64
 
@@ -224,9 +231,9 @@ def main():
     get_horiz, get_vert, get_slice_height, get_line_start, get_line_end = (
         modify_functions(map, cell_size, screen))
 
-    colours = {1 : (0xFF, 0x00, 0x00),
-               2 : (0x00, 0xFF, 0x00),
-               3 : (0x00, 0x00, 0xFF)}
+    colours = {1 : (0xFF, 0x00, 0x00),  # Red
+               2 : (0x00, 0xFF, 0x00),  # Green
+               3 : (0x00, 0x00, 0xFF)}  # Blue
 
     while 1:
         clock.tick(20)
@@ -240,23 +247,27 @@ def main():
 
             x_dist = None
             y_dist = None
-            ray_angle = (p_angle + (fov / 2)) - (column_angle * ray)
 
+            ray_angle = (p_angle + (fov / 2)) - (column_angle * ray)
+            
+            ray_angle = fix_angle(ray_angle)
             try:
                 x_hit = get_horiz(p_coord, ray_angle)
             except IndexError:
                 pass
             else:
-                x_dist = get_distance_to_wall(
-                    p_coord, x_hit, ray, fov, column_angle)
+                if x_hit:
+                    x_dist = get_distance_to_wall(
+                        p_coord, x_hit, ray, fov, column_angle)
 
             try:
                 y_hit = get_vert(p_coord, ray_angle)
             except IndexError:
                 pass
             else:
-                y_dist = get_distance_to_wall(
-                    p_coord, y_hit, ray, fov, column_angle)
+                if y_hit:
+                    y_dist = get_distance_to_wall(
+                        p_coord, y_hit, ray, fov, column_angle)
 
             if y_dist and not x_dist:
                 dist = y_dist
