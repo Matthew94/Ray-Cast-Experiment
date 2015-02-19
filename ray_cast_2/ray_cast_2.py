@@ -217,7 +217,8 @@ def main():
     cell_size = 64
 
     # Setting our start location (Each cell is 64 units)
-    p_coord = [32 * cell_size, 32 * cell_size]
+    p_coord = [(len(map) / 2) * cell_size,
+               (len(map[len(map) - 1]) / 2) * cell_size]
 
     # 0 east, 90 north etc
     p_angle = 180
