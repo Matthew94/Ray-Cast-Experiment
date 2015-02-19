@@ -13,11 +13,11 @@ pygame.init()
 def create_map():
     map = []
 
-    map.append([1] * 64)
+    map.append([4] + ([1] * 62) + [4])
     for i in range(62):
         map.append([2] + ([0] * 62) + [3])
-    map.append([1] * 64)
-
+    map.append([4] + ([1] * 62) + [4])
+    map = zip(*map[::-1])
     #map = [
     #[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     #[1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -100,7 +100,7 @@ def get_vert_intersect(p_coord, ray_angle, cell_size, map):
     get_grid_coord = partial(get_grid_coord, cell_size = cell_size)
 
     # Find Bx
-    if ray_angle < 90 or ray_angle > 270:
+    if ray_angle <= 90 or ray_angle >= 270:
         b_x = trunc(p_x / cell_size) * cell_size + cell_size
     else:
         b_x = trunc(p_x / cell_size) * cell_size - 1
@@ -108,7 +108,7 @@ def get_vert_intersect(p_coord, ray_angle, cell_size, map):
     b_y = p_y + (p_x - b_x) * tan(radians(ray_angle))
 
     # Find Xa and Ya
-    if ray_angle < 90 or ray_angle > 270:
+    if ray_angle <= 90 or ray_angle >= 270:
         x_a = cell_size
     else:
         x_a = -cell_size
@@ -162,22 +162,22 @@ def handle_input(p_angle, p_coord, cell_size, world_length):
                     new_y= p_coord[1] - cell_size
                     if new_y <= 0:
                         new_y = cell_size
-                    p_coord = (p_coord[0], new_y)
+                    p_coord[1] = new_y
                 elif event.key == pygame.K_s:
                     new_y= p_coord[1] + cell_size
                     if new_y >= world_length * cell_size:
                         new_y = world_length - cell_size
-                    p_coord = (p_coord[0], new_y)
+                    p_coord[1] = new_y
                 elif event.key == pygame.K_a:
                     new_x = p_coord[0] - cell_size
                     if new_x <= 0:
                         new_x = cell_size
-                    p_coord = (new_x, p_coord[1])
+                    p_coord[0] = new_x
                 elif event.key == pygame.K_d:
                     new_x = p_coord[0] + cell_size
                     if new_x >= world_length * cell_size:
                         new_x = world_length - cell_size
-                    p_coord = (new_x, p_coord[1])
+                    p_coord[0] = new_x
 
     p_angle = fix_angle(p_angle)
     return p_angle, p_coord
@@ -214,14 +214,14 @@ def main():
 
     fov = 90.0
 
-    # Setting our start location (Each cell is 64 units)
-    p_coord = (3 * 64, 2 * 64)
-
-    # 0 east, 90 north etc
-    p_angle = 300
-
     cell_size = 64
 
+    # Setting our start location (Each cell is 64 units)
+    p_coord = [32 * cell_size, 32 * cell_size]
+
+    # 0 east, 90 north etc
+    p_angle = 180
+    
     # Working out the distance from our camera to the visual plane
     plane_dist = get_distance_to_plane(fov, screen.get_width())
 
@@ -233,8 +233,8 @@ def main():
 
     colours = {1 : (0xFF, 0x00, 0x00),  # Red
                2 : (0x00, 0xFF, 0x00),  # Green
-               3 : (0x00, 0x00, 0xFF)}  # Blue
-
+               3 : (0x00, 0x00, 0xFF),  # Blue
+               4 : (0xFF, 0xFF, 0x00)}  # Yellow
     while 1:
         clock.tick(20)
 
@@ -301,7 +301,7 @@ def main():
         p_angle, p_coord = handle_input(p_angle, p_coord, cell_size, len(map))
 
         print("Angle : {0} Co-ordinate: {1}".format(
-            p_angle, (p_coord[0] / cell_size, p_coord[1] / cell_size)))
+            p_angle, [val / cell_size for val in p_coord]))
 
 if __name__ == "__main__":
     main()
