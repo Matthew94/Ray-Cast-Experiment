@@ -4,7 +4,7 @@ Taken from: http://www.permadi.com/tutorial/raycast/
 """
 
 from __future__ import print_function
-from math import cos, sin, tan, fabs, radians, trunc, sqrt
+from math import cos, sin, tan, fabs, radians, trunc, sqrt, floor
 from functools import partial
 
 import pygame
@@ -46,15 +46,38 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
 
     # Function for getting the grid coordinate
     # of a unit coordinate
-    get_grid_coord = lambda coord, cell_size : trunc(coord / cell_size) 
+    get_grid_coord = lambda coord, cell_size : int(floor(coord / cell_size)) 
     get_grid_coord = partial(get_grid_coord, cell_size = cell_size)
 
+    if 0 <= ray_angle < 90:
+        alpha = ray_angle
+    elif 90 <= ray_angle < 180:
+        alpha = 180 - ray_angle
+    elif 180 <= ray_angle < 270:
+        alpha = ray_angle - 180
+    elif 270 <= ray_angle <= 360:
+        alpha = 360 - ray_angle
+
+    grid_x, grid_y = get_grid_coord(p_x), get_grid_coord(p_y)
+    if ray_angle == 360:
+        return None
+    elif ray_angle == 90:
+        while map[grid_x][grid_y] == 0:
+            grid_y -= 1
+        return (grid_x, grid_y)
+    elif ray_angle == 180:
+        return None
+    elif ray_angle == 270:
+        while map[grid_x][grid_y] == 0:
+            grid_y += 1
+        return (grid_x, grid_y)
+
     # Find the unit y coordinate of the first grid hit
-    if ray_angle <= 180:
-        a_y = trunc(p_y / cell_size) * cell_size - 1
+    if ray_angle <= 180 or ray_angle == 360:
+        a_y = int(floor(p_y / cell_size)) * cell_size - 1
     else:
-        a_y = trunc(p_y / cell_size) * cell_size + cell_size
-    
+        a_y = int(floor(p_y / cell_size)) * cell_size + cell_size
+
     # Find the unit x coordinate of the first grid hit
     a_x = p_x + (p_y - a_y) / tan(radians(ray_angle))
 
@@ -71,7 +94,7 @@ def get_horiz_intersect(p_coord, ray_angle, cell_size, map):
 
     # Finding the size of the triangle that we keep adding for each stage
     y_a = -cell_size if ray_angle <= 180 or ray_angle == 360 else cell_size
-    x_a = 64 / tan(radians(ray_angle))
+    x_a = 64 / tan(radians(alpha))
 
     # Setting up the variables for the loop
     x, y = a_x, a_y
@@ -96,14 +119,37 @@ def get_vert_intersect(p_coord, ray_angle, cell_size, map):
 
     # Function for getting the grid coordinate
     # of a unit coordinate
-    get_grid_coord = lambda coord, cell_size : trunc(coord / cell_size) 
+    get_grid_coord = lambda coord, cell_size : int(floor(coord / cell_size)) 
     get_grid_coord = partial(get_grid_coord, cell_size = cell_size)
+
+    if 0 <= ray_angle < 90:
+        alpha = ray_angle
+    elif 90 <= ray_angle < 180:
+        alpha = 180 - ray_angle
+    elif 180 <= ray_angle < 270:
+        alpha = ray_angle - 180
+    elif 270 <= ray_angle <= 360:
+        alpha = 360 - ray_angle
+
+    grid_x, grid_y = get_grid_coord(p_x), get_grid_coord(p_y)
+    if ray_angle == 360:
+        while map[grid_x][grid_y] == 0:
+            grid_x += 1
+        return (grid_x, grid_y)
+    elif ray_angle == 90:
+        return None
+    elif ray_angle == 180:
+        while map[grid_x][grid_y] == 0:
+            grid_x -= 1
+        return (grid_x, grid_y)
+    elif ray_angle == 270:
+        return None
 
     # Find Bx
     if ray_angle <= 90 or ray_angle >= 270:
-        b_x = trunc(p_x / cell_size) * cell_size + cell_size
+        b_x = int(floor(p_x / cell_size)) * cell_size + cell_size
     else:
-        b_x = trunc(p_x / cell_size) * cell_size - 1
+        b_x = int(floor(p_x / cell_size)) * cell_size - 1
 
     b_y = p_y + (p_x - b_x) * tan(radians(ray_angle))
 
@@ -113,7 +159,7 @@ def get_vert_intersect(p_coord, ray_angle, cell_size, map):
     else:
         x_a = -cell_size
 
-    y_a = cell_size * tan(radians(ray_angle))
+    y_a = cell_size * tan(radians(alpha))
 
     x_new = b_x
     y_new = b_y
@@ -188,7 +234,7 @@ def fix_angle(p_angle):
     if p_angle >= 360:
             p_angle = 0 + p_angle - 360
     if p_angle == 0:
-        p_angle = 360.0
+        p_angle = 360
     return p_angle
 
 def modify_functions(map, cell_size, screen):
